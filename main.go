@@ -10,7 +10,10 @@ import (
 	"time"
 )
 
+
+
 func main() {
+	fmt.Println(datapkg.Packagelengmap)
 	sps := utils.GetSerialPorts()
 	fmt.Println("SerialPorts ",sps)
 
