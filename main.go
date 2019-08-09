@@ -8,7 +8,6 @@ import (
 	"github.com/tarm/serial"
 	"io"
 	"runtime"
-	"runtime/pprof"
 	"scentrealm_bcc/datapkg"
 	"scentrealm_bcc/datapkg/defines/CTLBCC"
 	"scentrealm_bcc/datapkg/defines/CTLSP"
@@ -45,13 +44,11 @@ func (sbo *ScentBccOperator) HandleDisconnect(pas map[string]interface{}) error 
 	if !sbo.IsConnected() {
 		return nil
 	}
-
 	if sbo.sp != nil {
 		err := sbo.sp.s.Close()
 		sbo.sp.isConnected = false
 		return err
 	}
-
 	return nil
 }
 
@@ -164,14 +161,13 @@ Retry:
 
 	return nil
 }
-var addr = flag.String("addr", "localhost:8383", "http service address")
 
 func MainRunner() {
-	flag.Parse()
+
 	var server = &scentser.ScentWsServer{}
 	var handler = &ScentBccOperator{}
 	server.Init()
-	server.ServerAddr = *addr
+	server.ServerAddr = *addrPtr
 
 	server.AddHandler(scentser.CmdConnect, handler.HandleConnect)
 	server.AddHandler(scentser.CmdDisconnect, handler.HandleDisconnect)
@@ -179,17 +175,26 @@ func MainRunner() {
 	server.AddHandler(scentser.CmdStopPlay, handler.HandleStopPlay)
 	server.AddHandler(scentser.CmdWakeup, handler.HandleWakeUp)
 
-	fmt.Println(server)
+	fmt.Println("Scent Server Start Up At",server.ServerAddr,server.ServeUri)
 	server.RunServer()
 }
 
+var addrPtr = flag.String("addr", "localhost:8383", "http service address")
+var versionPtr = flag.Bool("version", false, "show version")
+
 func main() {
-	//MainRunner()
-	p := FindConnectedCTL()
-	if p ==nil{
-		logger.Println("Nt fD")
+	flag.Parse()
+	if *versionPtr {
+		fmt.Println("current version:1.0.0")
+		return
 	}
-	fmt.Println(pprof.Profiles())
+
+	MainRunner()
+	//p := FindConnectedCTL()
+	//if p ==nil{
+	//	logger.Println("Nt fD")
+	//}
+	//fmt.Println(pprof.Profiles())
 }
 
 type SerialPort struct {
@@ -287,19 +292,20 @@ func GetSerialPortList() []string {
 }
 
 func FindConnectedCTL() *SerialPort {
+	logger.Println("Auto Connect Start")
 	sps := GetSerialPortList()
-	logger.Println("SerialPorts ", sps)
+	logger.Println("List SerialPorts ", sps)
 	ch := make(chan *SerialPort,1)
 
 	for _, v := range sps {
 		go TestSerialPortAsController(v, ch)
 	}
-	logger.Println("After Go ")
+	logger.Println("Waiting")
 	select {
 	case s := <-ch:
-		logger.Printf("MATCH %+v\n", s.c)
+		logger.Printf("MATCHES %+v\n", s.c)
 		return s
-	case <-time.After(time.Second * 22):
+	case <-time.After(time.Second * 2):
 		logger.Println("FindConnectedCTL Timeout")
 	}
 	return nil

@@ -52,8 +52,12 @@ type ScentWsServer struct {
 }
 
 func (ser *ScentWsServer) Init() {
-	ser.WsServer = &websocket.Upgrader{} // use default options
-	ser.ServeUri = "/scent/ctl"
+	ser.WsServer = &websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	} // use default options
+	ser.ServeUri = "/scent/controller"
 	ser.ServerAddr = "localhost:8080"
 	ser.CmdHandlers = make(map[string]func(pas map[string]interface{}) error)
 }
@@ -276,7 +280,7 @@ window.addEventListener("load", function(evt) {
 <p><input id="input2" type="text" value='{"cmd":"Connect"}' style="width:500px;">
 <button id="send2">Send Connect CMD</button>
 
-<p><input id="input1" type="text" value='{"cmd":"WakeUp","params":{"blocking":false}}' style="width:500px;">
+<p><input id="input1" type="text" value='{"cmd":"WakeUp","params":{"blocking":true}}' style="width:500px;">
 <button id="send1">Send WakeUp CMD</button>
 
 <p><input id="input" type="text" value='{"cmd":"PlaySmell","params":{"smell":2,"duration":2000,"channel":0}}' style="width:500px;">
